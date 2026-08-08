@@ -1,0 +1,114 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score, classification_report
+
+# ==========================================
+# ✈️ AEROGUARD AI
+# Aircraft Engine Fault Detection
+# ==========================================
+
+# Load the sensor dataset
+data = pd.read_csv("data/engine_sensor_data.csv")
+
+# Sensor features
+features = [
+    "temperature_c",
+    "pressure_psi",
+    "vibration_mm_s",
+    "rpm",
+    "fuel_flow_kg_s",
+    "oil_pressure_psi"
+]
+
+X = data[features]
+y = data["fault"]
+
+# Split data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42,
+    stratify=y
+)
+
+# Create AI/ML model
+model = Pipeline([
+    ("scaler", StandardScaler()),
+
+    ("classifier", RandomForestClassifier(
+        n_estimators=250,
+        random_state=42,
+        class_weight="balanced"
+    ))
+])
+
+# Train the AI
+print("Training aircraft engine AI...")
+model.fit(X_train, y_train)
+
+# Test the AI
+predictions = model.predict(X_test)
+
+accuracy = accuracy_score(y_test, predictions)
+
+print("\n================================")
+print("     AEROGUARD AI RESULTS")
+print("================================")
+
+print(f"\nModel Accuracy: {accuracy:.2%}")
+
+print("\nClassification Report:")
+print(
+    classification_report(
+        y_test,
+        predictions,
+        target_names=["Normal", "Fault"]
+    )
+)
+
+# ==========================================
+# Test a new aircraft engine reading
+# ==========================================
+
+print("\n================================")
+print("     ENGINE HEALTH CHECK")
+print("================================")
+
+temperature = float(input("Temperature (°C): "))
+pressure = float(input("Pressure (psi): "))
+vibration = float(input("Vibration (mm/s): "))
+rpm = float(input("RPM: "))
+fuel_flow = float(input("Fuel Flow (kg/s): "))
+oil_pressure = float(input("Oil Pressure (psi): "))
+
+new_engine = pd.DataFrame([{
+    "temperature_c": temperature,
+    "pressure_psi": pressure,
+    "vibration_mm_s": vibration,
+    "rpm": rpm,
+    "fuel_flow_kg_s": fuel_flow,
+    "oil_pressure_psi": oil_pressure
+}])
+
+# AI prediction
+prediction = model.predict(new_engine)[0]
+
+# Probability of a fault
+fault_probability = model.predict_proba(new_engine)[0][1]
+
+print("\n================================")
+print("        AI ASSESSMENT")
+print("================================")
+
+if prediction == 0:
+    print("✅ ENGINE STATUS: NORMAL")
+else:
+    print("🚨 ENGINE STATUS: POSSIBLE FAULT")
+
+print(f"Fault Probability: {fault_probability:.2%}")
+
+print("\nAssessment complete.")

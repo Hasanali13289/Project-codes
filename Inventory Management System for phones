@@ -1,0 +1,338 @@
+
+# ============================================================
+# 📱 PHONE INVENTORY MANAGEMENT SYSTEM
+# ============================================================
+
+inventory = {}
+
+
+# ============================================================
+# ADD PHONE
+# ============================================================
+
+def add_phone():
+
+    print("\n======================================")
+    print("             ADD PHONE")
+    print("======================================")
+
+    phone = input("Enter phone name/model: ").strip()
+
+    # Check that phone name is not empty
+    if phone == "":
+        print("❌ Phone name cannot be empty.")
+        return
+
+    # Keep asking until a valid IMEI is entered
+    while True:
+
+        imei = input("Enter 15-digit IMEI: ").strip()
+
+        # Check if IMEI contains only numbers
+        if not imei.isdigit():
+
+            print("\n❌ ERROR: IMEI can only contain numbers.")
+            print("Please enter the IMEI again.")
+            continue
+
+        # Check if IMEI is exactly 15 digits
+        if len(imei) != 15:
+
+            print("\n❌ ERROR: IMEI must be exactly 15 digits.")
+            print("Please enter the IMEI again.")
+            continue
+
+        # Check if IMEI already exists
+        imei_exists = False
+
+        for phone_name, imeis in inventory.items():
+
+            if imei in imeis:
+
+                print("\n❌ ERROR: This IMEI already exists!")
+                print(f"This IMEI belongs to: {phone_name}")
+                print("Please enter a different IMEI.")
+
+                imei_exists = True
+                break
+
+        if imei_exists:
+            continue
+
+        # IMEI is valid
+        break
+
+    # Add IMEI to existing phone model
+    if phone in inventory:
+
+        inventory[phone].append(imei)
+
+    # Create a new phone model
+    else:
+
+        inventory[phone] = [imei]
+
+    print("\n✅ PHONE ADDED SUCCESSFULLY!")
+    print("--------------------------------------")
+    print(f"Phone: {phone}")
+    print(f"IMEI:  {imei}")
+    print("--------------------------------------")
+
+
+# ============================================================
+# VIEW INVENTORY
+# ============================================================
+
+def view_inventory():
+
+    print("\n======================================")
+    print("          CURRENT INVENTORY")
+    print("======================================")
+
+    # Check if inventory is empty
+    if not inventory:
+
+        print("📦 Inventory is empty.")
+        return
+
+    total_phones = 0
+
+    # Display every phone model
+    for phone, imeis in inventory.items():
+
+        quantity = len(imeis)
+
+        total_phones += quantity
+
+        print(f"\n📱 PHONE: {phone}")
+        print(f"   Quantity: {quantity}")
+
+        print("   IMEIs:")
+
+        for number, imei in enumerate(imeis, start=1):
+
+            print(f"      {number}. {imei}")
+
+    print("\n--------------------------------------")
+    print(f"TOTAL PHONES: {total_phones}")
+    print("--------------------------------------")
+
+
+# ============================================================
+# SEARCH IMEI
+# ============================================================
+
+def search_imei():
+
+    print("\n======================================")
+    print("             SEARCH IMEI")
+    print("======================================")
+
+    imei = input("Enter IMEI to search: ").strip()
+
+    # Validate IMEI
+    if not imei.isdigit() or len(imei) != 15:
+
+        print("\n❌ ERROR: IMEI must be exactly 15 digits.")
+        return
+
+    # Search through inventory
+    for phone, imeis in inventory.items():
+
+        if imei in imeis:
+
+            print("\n✅ IMEI FOUND")
+            print("--------------------------------------")
+            print(f"Phone: {phone}")
+            print(f"IMEI:  {imei}")
+            print("--------------------------------------")
+
+            return
+
+    print("\n❌ IMEI NOT FOUND")
+    print("This IMEI is not in your inventory.")
+
+
+# ============================================================
+# SELL / REMOVE PHONE
+# ============================================================
+
+def remove_phone():
+
+    print("\n======================================")
+    print("          SELL / REMOVE PHONE")
+    print("======================================")
+
+    # Keep asking for a valid IMEI
+    while True:
+
+        imei = input("Enter 15-digit IMEI: ").strip()
+
+        if not imei.isdigit() or len(imei) != 15:
+
+            print("\n❌ ERROR: IMEI must be exactly 15 digits.")
+            print("Please enter the IMEI again.")
+            continue
+
+        break
+
+    # Find IMEI
+    for phone, imeis in inventory.items():
+
+        if imei in imeis:
+
+            imeis.remove(imei)
+
+            # If no phones of this model remain,
+            # remove the phone model from inventory
+            if len(imeis) == 0:
+
+                del inventory[phone]
+
+            print("\n✅ PHONE REMOVED SUCCESSFULLY!")
+            print("--------------------------------------")
+            print(f"Phone: {phone}")
+            print(f"IMEI:  {imei}")
+            print("--------------------------------------")
+
+            return
+
+    print("\n❌ IMEI NOT FOUND")
+    print("This phone is not in your inventory.")
+
+
+# ============================================================
+# FINAL INVENTORY REPORT
+# ============================================================
+
+def final_report():
+
+    print("\n======================================")
+    print("       FINAL INVENTORY REPORT")
+    print("======================================")
+
+    # Check if inventory is empty
+    if not inventory:
+
+        print("📦 Inventory is empty.")
+        return
+
+    total_phones = 0
+    total_models = len(inventory)
+
+    # Display inventory
+    for phone, imeis in inventory.items():
+
+        quantity = len(imeis)
+
+        total_phones += quantity
+
+        print(f"\n📱 PHONE MODEL: {phone}")
+        print(f"   Quantity: {quantity}")
+
+        print("   IMEIs:")
+
+        for number, imei in enumerate(imeis, start=1):
+
+            print(f"      {number}. {imei}")
+
+    # Display totals
+    print("\n======================================")
+    print(f"TOTAL PHONE MODELS: {total_models}")
+    print(f"TOTAL PHONES:       {total_phones}")
+    print("======================================")
+
+
+# ============================================================
+# MAIN PROGRAM
+# ============================================================
+
+print("======================================")
+print("   📱 PHONE INVENTORY MANAGEMENT")
+print("======================================")
+
+while True:
+
+    print("\n======================================")
+    print("               MENU")
+    print("======================================")
+
+    print("1. ➕ Add Phone")
+    print("2. 📦 View Inventory")
+    print("3. 🔍 Search IMEI")
+    print("4. 🛒 Sell / Remove Phone")
+    print("5. 📋 Final Inventory Report")
+    print("6. 🚪 Exit")
+
+    choice = input("\nChoose an option (1-6): ").strip()
+
+    # ========================================================
+    # ADD PHONE
+    # ========================================================
+
+    if choice == "1":
+
+        add_phone()
+
+    # ========================================================
+    # VIEW INVENTORY
+    # ========================================================
+
+    elif choice == "2":
+
+        view_inventory()
+
+    # ========================================================
+    # SEARCH IMEI
+    # ========================================================
+
+    elif choice == "3":
+
+        search_imei()
+
+    # ========================================================
+    # SELL / REMOVE PHONE
+    # ========================================================
+
+    elif choice == "4":
+
+        remove_phone()
+
+    # ========================================================
+    # FINAL REPORT
+    # ========================================================
+
+    elif choice == "5":
+
+        final_report()
+
+    # ========================================================
+    # EXIT
+    # ========================================================
+
+    elif choice == "6":
+
+        print("\n======================================")
+        print("       FINAL INVENTORY REPORT")
+        print("======================================")
+
+        final_report()
+
+        print("\n======================================")
+        print("   THANK YOU FOR USING THE SYSTEM")
+        print("======================================")
+
+        print("Goodbye! 👋")
+
+        break
+
+    # ========================================================
+    # INVALID MENU OPTION
+    # ========================================================
+
+    else:
+
+        print("\n❌ ERROR: Invalid option.")
+        print("Please choose a number from 1 to 6.")
+```
+
