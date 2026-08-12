@@ -1,0 +1,848 @@
+import tkinter as tk
+from tkinter import messagebox
+import requests
+from datetime import datetime
+
+
+# ==========================================================
+# CONFIGURATION
+# ==========================================================
+
+API_KEY = "b3f0cc935f70aa7d64b3365909f4261a"
+
+CURRENT_WEATHER_URL = (
+    "https://api.openweathermap.org/data/2.5/weather"
+)
+
+FORECAST_URL = (
+    "https://api.openweathermap.org/data/2.5/forecast"
+)
+
+
+# ==========================================================
+# WEATHER ICONS
+# ==========================================================
+
+WEATHER_ICONS = {
+    "Clear": "☀️",
+    "Clouds": "☁️",
+    "Rain": "🌧️",
+    "Drizzle": "🌦️",
+    "Thunderstorm": "⛈️",
+    "Snow": "❄️",
+    "Mist": "🌫️",
+    "Smoke": "🌫️",
+    "Haze": "🌫️",
+    "Dust": "🌫️",
+    "Fog": "🌫️",
+    "Sand": "🌫️",
+    "Ash": "🌋",
+    "Squall": "💨",
+    "Tornado": "🌪️"
+}
+
+
+# ==========================================================
+# COLORS
+# ==========================================================
+
+BG_COLOR = "#0f172a"
+CARD_COLOR = "#1e293b"
+SECONDARY_COLOR = "#334155"
+TEXT_COLOR = "#f8fafc"
+MUTED_COLOR = "#94a3b8"
+ACCENT_COLOR = "#38bdf8"
+BUTTON_COLOR = "#0284c7"
+
+
+# ==========================================================
+# WEATHER APP
+# ==========================================================
+
+class WeatherApp:
+
+    def __init__(self, root):
+
+        self.root = root
+
+        self.root.title("Weather Dashboard")
+
+        self.root.geometry("950x700")
+
+        self.root.configure(
+            bg=BG_COLOR
+        )
+
+        self.root.resizable(
+            False,
+            False
+        )
+
+        self.unit = "imperial"
+
+        self.last_city = ""
+
+        self.create_interface()
+
+        self.root.bind(
+            "<Return>",
+            lambda event: self.get_weather()
+        )
+
+
+    # ======================================================
+    # CREATE INTERFACE
+    # ======================================================
+
+    def create_interface(self):
+
+        # ------------------------------
+        # TITLE
+        # ------------------------------
+
+        title = tk.Label(
+            self.root,
+            text="Weather Dashboard",
+            font=("Arial", 30, "bold"),
+            bg=BG_COLOR,
+            fg=TEXT_COLOR
+        )
+
+        title.pack(
+            pady=(25, 5)
+        )
+
+
+        subtitle = tk.Label(
+            self.root,
+            text="Real-time weather information",
+            font=("Arial", 12),
+            bg=BG_COLOR,
+            fg=MUTED_COLOR
+        )
+
+        subtitle.pack(
+            pady=(0, 20)
+        )
+
+
+        # ------------------------------
+        # SEARCH BAR
+        # ------------------------------
+
+        search_frame = tk.Frame(
+            self.root,
+            bg=BG_COLOR
+        )
+
+        search_frame.pack()
+
+
+        self.city_entry = tk.Entry(
+            search_frame,
+            width=32,
+            font=("Arial", 15),
+            bg=SECONDARY_COLOR,
+            fg=TEXT_COLOR,
+            insertbackground="white",
+            relief="flat"
+        )
+
+        self.city_entry.grid(
+            row=0,
+            column=0,
+            padx=8,
+            ipady=8
+        )
+
+
+        search_button = tk.Button(
+            search_frame,
+            text="Search",
+            command=self.get_weather,
+            font=("Arial", 12, "bold"),
+            bg=BUTTON_COLOR,
+            fg="white",
+            activebackground=ACCENT_COLOR,
+            relief="flat",
+            padx=20,
+            pady=8,
+            cursor="hand2"
+        )
+
+        search_button.grid(
+            row=0,
+            column=1,
+            padx=5
+        )
+
+
+        # ------------------------------
+        # UNIT BUTTON
+        # ------------------------------
+
+        self.unit_button = tk.Button(
+            search_frame,
+            text="°F",
+            command=self.toggle_unit,
+            font=("Arial", 12, "bold"),
+            bg=SECONDARY_COLOR,
+            fg="white",
+            relief="flat",
+            padx=15,
+            pady=8,
+            cursor="hand2"
+        )
+
+        self.unit_button.grid(
+            row=0,
+            column=2,
+            padx=5
+        )
+
+
+        # ------------------------------
+        # STATUS
+        # ------------------------------
+
+        self.status_label = tk.Label(
+            self.root,
+            text="Enter a city to get weather",
+            font=("Arial", 11),
+            bg=BG_COLOR,
+            fg=MUTED_COLOR
+        )
+
+        self.status_label.pack(
+            pady=10
+        )
+
+
+        # ==================================================
+        # MAIN WEATHER CARD
+        # ==================================================
+
+        self.weather_card = tk.Frame(
+            self.root,
+            bg=CARD_COLOR,
+            width=850,
+            height=270
+        )
+
+        self.weather_card.pack(
+            padx=40,
+            pady=10
+        )
+
+        self.weather_card.pack_propagate(False)
+
+
+        # ------------------------------
+        # LOCATION
+        # ------------------------------
+
+        self.location_label = tk.Label(
+            self.weather_card,
+            text="Search for a city",
+            font=("Arial", 24, "bold"),
+            bg=CARD_COLOR,
+            fg=TEXT_COLOR
+        )
+
+        self.location_label.pack(
+            pady=(20, 5)
+        )
+
+
+        # ------------------------------
+        # WEATHER ICON
+        # ------------------------------
+
+        self.icon_label = tk.Label(
+            self.weather_card,
+            text="🌤️",
+            font=("Arial", 45),
+            bg=CARD_COLOR,
+            fg=TEXT_COLOR
+        )
+
+        self.icon_label.pack()
+
+
+        # ------------------------------
+        # TEMPERATURE
+        # ------------------------------
+
+        self.temperature_label = tk.Label(
+            self.weather_card,
+            text="--°",
+            font=("Arial", 45, "bold"),
+            bg=CARD_COLOR,
+            fg=TEXT_COLOR
+        )
+
+        self.temperature_label.pack()
+
+
+        # ------------------------------
+        # DESCRIPTION
+        # ------------------------------
+
+        self.description_label = tk.Label(
+            self.weather_card,
+            text="--",
+            font=("Arial", 14),
+            bg=CARD_COLOR,
+            fg=MUTED_COLOR
+        )
+
+        self.description_label.pack()
+
+
+        # ==================================================
+        # WEATHER DETAILS
+        # ==================================================
+
+        details_frame = tk.Frame(
+            self.root,
+            bg=BG_COLOR
+        )
+
+        details_frame.pack(
+            pady=15
+        )
+
+
+        self.feels_label = self.create_detail(
+            details_frame,
+            "Feels Like",
+            "--"
+        )
+
+        self.humidity_label = self.create_detail(
+            details_frame,
+            "Humidity",
+            "--"
+        )
+
+        self.wind_label = self.create_detail(
+            details_frame,
+            "Wind",
+            "--"
+        )
+
+        self.pressure_label = self.create_detail(
+            details_frame,
+            "Pressure",
+            "--"
+        )
+
+
+        # ==================================================
+        # FORECAST
+        # ==================================================
+
+        forecast_title = tk.Label(
+            self.root,
+            text="5-Day Forecast",
+            font=("Arial", 18, "bold"),
+            bg=BG_COLOR,
+            fg=TEXT_COLOR
+        )
+
+        forecast_title.pack(
+            pady=(5, 10)
+        )
+
+
+        self.forecast_frame = tk.Frame(
+            self.root,
+            bg=BG_COLOR
+        )
+
+        self.forecast_frame.pack()
+
+
+    # ======================================================
+    # CREATE DETAIL CARD
+    # ======================================================
+
+    def create_detail(
+        self,
+        parent,
+        title,
+        value
+    ):
+
+        frame = tk.Frame(
+            parent,
+            bg=CARD_COLOR,
+            width=190,
+            height=75
+        )
+
+        frame.pack(
+            side="left",
+            padx=7
+        )
+
+        frame.pack_propagate(False)
+
+
+        title_label = tk.Label(
+            frame,
+            text=title,
+            font=("Arial", 10),
+            bg=CARD_COLOR,
+            fg=MUTED_COLOR
+        )
+
+        title_label.pack(
+            pady=(10, 2)
+        )
+
+
+        value_label = tk.Label(
+            frame,
+            text=value,
+            font=("Arial", 13, "bold"),
+            bg=CARD_COLOR,
+            fg=TEXT_COLOR
+        )
+
+        value_label.pack()
+
+
+        return value_label
+
+
+    # ======================================================
+    # GET WEATHER
+    # ======================================================
+
+    def get_weather(self):
+
+        city = self.city_entry.get().strip()
+
+
+        if not city:
+
+            messagebox.showwarning(
+                "Missing City",
+                "Please enter a city name."
+            )
+
+            return
+
+
+        if API_KEY == "YOUR_API_KEY":
+
+            messagebox.showerror(
+                "API Key Missing",
+                "Please add your OpenWeatherMap API key."
+            )
+
+            return
+
+
+        self.status_label.config(
+            text="Loading weather...",
+            fg=ACCENT_COLOR
+        )
+
+        self.root.update_idletasks()
+
+
+        try:
+
+            # ----------------------------------------------
+            # CURRENT WEATHER
+            # ----------------------------------------------
+
+            params = {
+
+                "q": city,
+
+                "appid": API_KEY,
+
+                "units": self.unit
+            }
+
+
+            response = requests.get(
+                CURRENT_WEATHER_URL,
+                params=params,
+                timeout=10
+            )
+
+
+            if response.status_code == 404:
+
+                raise ValueError(
+                    "City not found."
+                )
+
+
+            if response.status_code != 200:
+
+                raise ValueError(
+                    "Unable to retrieve weather data."
+                )
+
+
+            current = response.json()
+
+
+            # ----------------------------------------------
+            # FORECAST
+            # ----------------------------------------------
+
+            forecast_response = requests.get(
+                FORECAST_URL,
+                params=params,
+                timeout=10
+            )
+
+
+            forecast_data = forecast_response.json()
+
+
+            self.update_current_weather(
+                current
+            )
+
+
+            self.update_forecast(
+                forecast_data
+            )
+
+
+            self.last_city = city
+
+
+            self.status_label.config(
+                text="Weather updated successfully",
+                fg="#4ade80"
+            )
+
+
+        except requests.exceptions.ConnectionError:
+
+            messagebox.showerror(
+                "Connection Error",
+                "Check your internet connection."
+            )
+
+
+        except requests.exceptions.Timeout:
+
+            messagebox.showerror(
+                "Timeout",
+                "The weather server took too long to respond."
+            )
+
+
+        except ValueError as error:
+
+            messagebox.showerror(
+                "Weather Error",
+                str(error)
+            )
+
+
+        except Exception as error:
+
+            messagebox.showerror(
+                "Error",
+                f"Something went wrong:\n{error}"
+            )
+
+
+    # ======================================================
+    # UPDATE CURRENT WEATHER
+    # ======================================================
+
+    def update_current_weather(
+        self,
+        data
+    ):
+
+        city = data["name"]
+
+        country = data["sys"]["country"]
+
+        temperature = data["main"]["temp"]
+
+        feels_like = data["main"]["feels_like"]
+
+        humidity = data["main"]["humidity"]
+
+        pressure = data["main"]["pressure"]
+
+        wind_speed = data["wind"]["speed"]
+
+        weather_main = data["weather"][0]["main"]
+
+        description = data["weather"][0]["description"]
+
+
+        # Location
+
+        self.location_label.config(
+            text=f"{city}, {country}"
+        )
+
+
+        # Icon
+
+        icon = WEATHER_ICONS.get(
+            weather_main,
+            "🌤️"
+        )
+
+        self.icon_label.config(
+            text=icon
+        )
+
+
+        # Temperature
+
+        symbol = "°F"
+
+        if self.unit == "metric":
+
+            symbol = "°C"
+
+
+        self.temperature_label.config(
+            text=f"{temperature:.0f}{symbol}"
+        )
+
+
+        # Description
+
+        self.description_label.config(
+            text=description.title()
+        )
+
+
+        # Details
+
+        self.feels_label.config(
+            text=f"{feels_like:.0f}{symbol}"
+        )
+
+
+        self.humidity_label.config(
+            text=f"{humidity}%"
+        )
+
+
+        wind_unit = "mph"
+
+        if self.unit == "metric":
+
+            wind_unit = "m/s"
+
+
+        self.wind_label.config(
+            text=f"{wind_speed:.1f} {wind_unit}"
+        )
+
+
+        self.pressure_label.config(
+            text=f"{pressure} hPa"
+        )
+
+
+    # ======================================================
+    # UPDATE FORECAST
+    # ======================================================
+
+    def update_forecast(
+        self,
+        data
+    ):
+
+        # Remove previous cards
+
+        for widget in self.forecast_frame.winfo_children():
+
+            widget.destroy()
+
+
+        forecast_list = data["list"]
+
+
+        # Select approximately one forecast
+        # every 24 hours
+
+        daily = []
+
+        used_dates = set()
+
+
+        for item in forecast_list:
+
+            date = item["dt_txt"].split(" ")[0]
+
+
+            if date not in used_dates:
+
+                daily.append(item)
+
+                used_dates.add(date)
+
+
+            if len(daily) == 5:
+
+                break
+
+
+        # Create cards
+
+        for item in daily:
+
+            self.create_forecast_card(
+                item
+            )
+
+
+    # ======================================================
+    # FORECAST CARD
+    # ======================================================
+
+    def create_forecast_card(
+        self,
+        data
+    ):
+
+        frame = tk.Frame(
+            self.forecast_frame,
+            bg=CARD_COLOR,
+            width=160,
+            height=130
+        )
+
+        frame.pack(
+            side="left",
+            padx=5
+        )
+
+        frame.pack_propagate(False)
+
+
+        date = datetime.fromtimestamp(
+            data["dt"]
+        )
+
+
+        day = date.strftime(
+            "%a"
+        )
+
+
+        weather_main = data["weather"][0]["main"]
+
+        icon = WEATHER_ICONS.get(
+            weather_main,
+            "🌤️"
+        )
+
+
+        temperature = data["main"]["temp"]
+
+
+        symbol = "°F"
+
+        if self.unit == "metric":
+
+            symbol = "°C"
+
+
+        day_label = tk.Label(
+            frame,
+            text=day,
+            font=("Arial", 12, "bold"),
+            bg=CARD_COLOR,
+            fg=TEXT_COLOR
+        )
+
+        day_label.pack(
+            pady=(10, 2)
+        )
+
+
+        icon_label = tk.Label(
+            frame,
+            text=icon,
+            font=("Arial", 25),
+            bg=CARD_COLOR,
+            fg=TEXT_COLOR
+        )
+
+        icon_label.pack()
+
+
+        temp_label = tk.Label(
+            frame,
+            text=f"{temperature:.0f}{symbol}",
+            font=("Arial", 13, "bold"),
+            bg=CARD_COLOR,
+            fg=TEXT_COLOR
+        )
+
+        temp_label.pack()
+
+
+    # ======================================================
+    # TOGGLE °F / °C
+    # ======================================================
+
+    def toggle_unit(self):
+
+        if self.unit == "imperial":
+
+            self.unit = "metric"
+
+            self.unit_button.config(
+                text="°C"
+            )
+
+        else:
+
+            self.unit = "imperial"
+
+            self.unit_button.config(
+                text="°F"
+            )
+
+
+        if self.last_city:
+
+            self.city_entry.delete(
+                0,
+                tk.END
+            )
+
+            self.city_entry.insert(
+                0,
+                self.last_city
+            )
+
+            self.get_weather()
+
+
+# ==========================================================
+# START APPLICATION
+# ==========================================================
+
+if __name__ == "__main__":
+
+    root = tk.Tk()
+
+    app = WeatherApp(
+        root
+    )
+
+    root.mainloop()
